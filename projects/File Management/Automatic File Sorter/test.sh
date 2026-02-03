@@ -2,43 +2,53 @@
 
 # --- Variables ---
 
+error_msg=''
+
 test_dir='./test'
 
 images=(
-"image1.jpg"
-"image2.png"
-"image3.svg"
+  "image1.jpg"
+  "image2.png"
+  "image3.svg"
 )
 videos=(
-"video1.mp4"
-"video2.avi"
-"video3.mov"
+  "video1.mp4"
+  "video2.avi"
+  "video3.mov"
 )
 documents=(
-"document1.doc"
-"document2.docx"
-"document3.pdf"
+  "document1.doc"
+  "document2.docx"
+  "document3.pdf"
 )
 others=(
-"other1.c"
-"other2.asm"
-"other3.cs"
-)
-
-all_files=(
-"${images[@]}"
-"${videos[@]}"
-"${documents[@]}"
-"${others[@]}"
+  "other1.c"
+  "other2.asm"
+  "other3.cs"
 )
 
 # --- Helper Functions ---
 
-setup() {
+before_each() {
+  local all_files=(
+    "${images[@]}"
+    "${videos[@]}"
+    "${documents[@]}"
+    "${others[@]}"
+  )
+
+  # Create the test directory
   mkdir -p "$test_dir"
+
+  # Create dummy files
+  for file in "${all_files[@]}"; do
+    touch "${test_dir}/${file}"
+  done
+
 }
 
-terminate() {
+after_each() {
+  # Remove the test directory and the dummy files
   rm -rf "$test_dir"
 }
 
@@ -61,67 +71,178 @@ assert_file_exists() {
 # --- Test Cases ---
 
 test_basic_organization() {
-  echo '--- Test 1: Basic Organization ---'
-  setup
-
-  # Create dummy files
-  for file in "${all_files[@]}"; do
-    touch "${test_dir}/${file}"
-  done
-
   # Run the script
-  ./run.sh "$test_dir" &>/dev/null
+  ./run.sh "$test_dir"
 
   # Validate
   for file in "${images[@]}"; do
     local file_path="${test_dir}/Images/${file}"
     if ! assert_file_exists "$file_path"; then
-      print_failed "There is no such file ($file_path)."
-      terminate
-      return 1
+      error_msg="There is no such file ($file_path)."
+      return
     fi
   done
 
   for file in "${videos[@]}"; do
     local file_path="${test_dir}/Videos/${file}"
     if ! assert_file_exists "$file_path"; then
-      print_failed "There is no such file ($file_path)."
-      terminate
-      return 1
+      error_msg="There is no such file ($file_path)."
+      return
     fi
   done
 
   for file in "${documents[@]}"; do
     local file_path="${test_dir}/Documents/${file}"
     if ! assert_file_exists "$file_path"; then
-      print_failed "There is no such file ($file_path)."
-      terminate
-      return 1
+      error_msg="There is no such file ($file_path)."
+      return
     fi
   done
 
   for file in "${others[@]}"; do
     local file_path="${test_dir}/Others/${file}"
     if ! assert_file_exists "$file_path"; then
-      print_failed "There is no such file ($file_path)."
-      terminate
-      return 1
+      error_msg="There is no such file ($file_path)."
+      return
     fi
   done
 
-
   local shouldnt_exist="${test_dir}/Images/video1.mp4"
   if assert_file_exists "$shouldnt_exist"; then
-    print_failed "This file shouldn't exist ($shouldnt_exist)."
-    terminate
-    return 1
+    error_msg="This file shouldn't exist ($shouldnt_exist)."
+    return
   fi
+}
 
-  print_passed
-  terminate
-  return 0
+test_category_excluding() {
+  # Run the script
+  ./run.sh "$test_dir" -ed 'Images,Documents'
+
+  # Validate
+  for file in "${images[@]}"; do
+    local file_path="${test_dir}/${file}"
+    if ! assert_file_exists "$file_path"; then
+      error_msg="There is no such file ($file_path)."
+      return
+    fi
+  done
+
+  for file in "${videos[@]}"; do
+    local file_path="${test_dir}/Videos/${file}"
+    if ! assert_file_exists "$file_path"; then
+      error_msg="There is no such file ($file_path)."
+      return
+    fi
+  done
+
+  for file in "${documents[@]}"; do
+    local file_path="${test_dir}/${file}"
+    if ! assert_file_exists "$file_path"; then
+      error_msg="There is no such file ($file_path)."
+      return
+    fi
+  done
+
+  for file in "${others[@]}"; do
+    local file_path="${test_dir}/Others/${file}"
+    if ! assert_file_exists "$file_path"; then
+      error_msg="There is no such file ($file_path)."
+      return
+    fi
+  done
+
+  local shouldnt_exist="${test_dir}/video1.mp4"
+  if assert_file_exists "$shouldnt_exist"; then
+    error_msg="This file shouldn't exist ($shouldnt_exist)."
+    return
+  fi
+}
+
+test_others_dir_excluding() {
+  # Run the script
+  ./run.sh "$test_dir" -ed "Videos,Others"
+
+  # Validate
+  for file in "${images[@]}"; do
+    local file_path="${test_dir}/Images/${file}"
+    if ! assert_file_exists "$file_path"; then
+      error_msg="There is no such file ($file_path)."
+      return
+    fi
+  done
+
+  for file in "${videos[@]}"; do
+    local file_path="${test_dir}/${file}"
+    if ! assert_file_exists "$file_path"; then
+      error_msg="There is no such file ($file_path)."
+      return
+    fi
+  done
+
+  for file in "${documents[@]}"; do
+    local file_path="${test_dir}/Documents/${file}"
+    if ! assert_file_exists "$file_path"; then
+      error_msg="There is no such file ($file_path)."
+      return
+    fi
+  done
+
+  for file in "${others[@]}"; do
+    local file_path="${test_dir}/${file}"
+    if ! assert_file_exists "$file_path"; then
+      error_msg="There is no such file ($file_path)."
+      return
+    fi
+  done
+
+  local shouldnt_exist="${test_dir}/Others/video1.mp4"
+  if assert_file_exists "$shouldnt_exist"; then
+    error_msg="This file shouldn't exist ($shouldnt_exist)."
+    return
+  fi
+}
+
+test_extension_ignoring() {
+  # Run the script
+  ./run.sh "$test_dir" -ie "docx,c,png"
+
+  # Validate
+  local ie_files=('document2.docx' 'other1.c' 'image2.png')
+  for file in "${ie_files[@]}"; do
+    local file_path="${test_dir}/${file}"
+    if ! assert_file_exists "$file_path"; then
+      error_msg="There is no such file ($file_path)."
+      return
+    fi
+  done
+
+  if assert_file_exists "${test_dir}/document1.doc"; then
+    error_msg="This file shouldn't exist (${test_dir}/document1.doc)."
+    return
+  fi
 }
 
 # --- Execution ---
 
-test_basic_organization
+declare -A tests
+tests[test_basic_organization]='Basic Organization'
+tests[test_category_excluding]='Category Excluding'
+tests[test_others_dir_excluding]='Others Directory Excluding'
+tests[test_extension_ignoring]='Extension Ignoring'
+
+test_number=1
+for test in "${!tests[@]}"; do
+  echo "--- Test $test_number: ${tests[$test]} ---"
+  before_each
+  $test &>/dev/null
+
+  if [[ -n "$error_msg" ]]; then
+    print_failed "$error_msg"
+  else
+    print_passed
+  fi
+
+  after_each
+  error_msg=''
+  ((test_number++))
+done

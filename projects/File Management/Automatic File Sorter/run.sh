@@ -32,6 +32,25 @@ usage() {
   echo "  -h, --help Show this help message"
 }
 
+# Logger
+log() {
+  if $verbose; then
+    echo "$1"
+  fi
+}
+
+is_ext_contained_in_excluded_dirs() {
+  for category in ${excluded_dirs[@]}; do
+    for extension in ${extensions_to_categories[$category]}; do
+      if [[ $extension == "$1" ]]; then
+        return 0
+      fi
+    done
+  done
+
+  return 1
+}
+
 # --- Argument Parsing ---
 while [[ $# -gt 0 ]]; do
   key="$1"
@@ -41,11 +60,11 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     -ed|--exclude-dirs)
-      ifs=',' read -ra excluded_dirs <<< "$2"
+      IFS=',' read -ra excluded_dirs <<< "$2"
       shift 2
       ;;
     -ie|--ignore-exts)
-      ifs=',' read -ra ignored_exts <<< "$2"
+      IFS=',' read -ra ignored_exts <<< "$2"
       shift 2
       ;;
     -h|--help)
@@ -82,38 +101,57 @@ target_dir="${target_dir%/}"
 
 # --- Main Logic ---
 
-if $verbose; then
-  echo "Scanning: $target_dir"
-fi
-
 for category in "${!extensions_to_categories[@]}"; do
   if [[ " ${excluded_dirs[*]} " =~ " ${category} " ]]; then
+    log "Skipping the $category category"
     continue
   fi
 
-  mkdir "$target_dir"/"$category"
+  category_path="${target_dir}/${category}"
+
+  if [[ ! -d "$category_path" ]]; then
+    log "Creating directory: $category_path"
+    mkdir -p "$category_path"
+  fi
 
   for extension in ${extensions_to_categories[$category]}; do
     if [[ " ${ignored_exts[*]} " =~ " ${extension} " ]]; then
+      log "Ignoring $extension extension"
       continue
     fi
 
-    mv "$target_dir"/*."$extension" "$target_dir"/"$category"/ 2>/dev/null
+    mv "$target_dir"/*."$extension" "$category_path" -u 2>/dev/null
   done
+  log
 done
 
-
 if [[ ! " ${excluded_dirs[*]} " =~ " ${others_dir} " ]]; then
-  mkdir "$target_dir"/"$others_dir"
+  others_path="${target_dir}/${others_dir}"
+
+  if [[ ! -d "$others_path" ]]; then
+    log "Creating directory: $others_path"
+    mkdir -p "$others_path"
+  fi
 
   for file in "${target_dir}"/*.*; do
-    if [[ " ${ignored_exts[*]} " =~ " ${file##*.} " ]]; then
+    extension="${file##*.}"
+
+    if [[ " ${ignored_exts[*]} " =~ " $extension " ]]; then
+      log "Ignoring $extension extension"
       continue
     fi
 
-    mv "$file" "${target_dir}/${others_dir}/" -u
+    if is_ext_contained_in_excluded_dirs "$extension"; then
+      log "Ignoring $extension extension"
+      continue
+    fi
+
+    mv "$file" "$others_path" -u
   done
+else
+  log "Skipping the Others category and ignoring the rest of the files"
 fi
+log
 
 # Summary
 echo '=== Organization complete ==='
