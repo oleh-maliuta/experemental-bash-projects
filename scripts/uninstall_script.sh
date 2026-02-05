@@ -37,6 +37,12 @@ fi
 if [[ -f "/usr/local/bin/$installed_script_name" ]]; then
   echo "Found '$installed_script_name' in /usr/local/bin"
   sudo rm -i "/usr/local/bin/$installed_script_name"
+
+  if [[ -f "/usr/local/bin/$installed_script_name" ]]; then
+    echo -e "\e[1;31mUninstallation has been canceled.\e[m"
+    exit 1
+  fi
+
   echo -e "\e[1;32mRemoved global installation.\e[0m"
   exit 0
 fi
@@ -45,6 +51,12 @@ fi
 if [[ -f "$HOME/.local/bin/$installed_script_name" ]]; then
   echo "Found '$installed_script_name' in $HOME/.local/bin"
   rm -i "$HOME/.local/bin/$installed_script_name"
+
+  if [[ -f "$HOME/.local/bin/$installed_script_name" ]]; then
+    echo -e "\e[1;31mUninstallation has been canceled.\e[m"
+    exit 1
+  fi
+
   echo -e "\e[1;32mRemoved local installation.\e[0m"
   exit 0
 fi

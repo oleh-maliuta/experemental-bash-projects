@@ -26,10 +26,10 @@ ignored_exts=()
 usage() {
   echo "Usage: $0 <directory_path> [OPTIONS]"
   echo "Options:"
-  echo "  -v, --verbose Show detailed output"
-  echo "  -ed, --exclude-dirs Comma-separated list of directories NOT to create (e.g., 'Images,Videos')."
-  echo "  -ie, --ignore-exts Comma-separated list of extensions to ignore (e.g., 'txt,log')."
-  echo "  -h, --help Show this help message"
+  echo "  -v, --verbose         Show detailed output"
+  echo "  -ed, --exclude-dirs   Comma-separated list of directories NOT to create (e.g., 'Images,Videos')."
+  echo "  -ie, --ignore-exts    Comma-separated list of extensions to ignore (e.g., 'txt,log')."
+  echo "  -h, --help            Show this help message"
 }
 
 # Logger

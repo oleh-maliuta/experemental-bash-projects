@@ -46,20 +46,65 @@ fi
 if [[ "$2" == "-g" || "$2" == "--global" ]]; then
     mode='global'
 elif [[ -n "$2" && "$2" != "-l" && "$2" != "--local" ]]; then
-    echo "\e[1;31mError: Unknown option '$2'\e[0m"
+    echo -e "\e[1;31mError: Unknown option '$2'\e[0m"
     usage
 fi
 
+readonly global_install_dir='/usr/local/bin'
+readonly local_install_dir="$HOME/.local/bin"
+
+# Check if the script is already installed globally or locally and reinstall if needed
+if [[ -f "$global_install_dir/$installed_script_name" ]]; then
+  echo -e "\e[1;31mError: This project is already installed for all users ($global_install_dir).\e[0m"
+  if [[ "$mode" == 'local' ]]; then
+    read -p 'Would you like to reinstall it for current user? ' agree_to_reinstall
+    if [[ "${agree_to_reinstall,,}" == 'y' ]]; then
+      echo 'Uninstalling the package...'
+      sudo rm -i "$global_install_dir/$installed_script_name"
+      if [[ -f "$global_install_dir/$installed_script_name" ]]; then
+        echo -e "\e[1;31mReinstallation has been canceled.\e[0m"
+        exit 1
+      else
+        echo 'Removed global installation. Package is reinstalling for current user...'
+      fi
+    else
+      echo -e "\e[1;31mReinstallation has been canceled.\e[0m"
+      exit 1
+    fi
+  else
+    exit 1
+  fi
+elif [[ -f "$local_install_dir/$installed_script_name" ]]; then
+  echo -e "\e[1;31mError: This project is already installed for current user ($local_install_dir).\e[0m"
+  if [[ "$mode" == 'global' ]]; then
+    read -p 'Would you like to reinstall it for all users? ' agree_to_reinstall
+    if [[ "${agree_to_reinstall,,}" == 'y' ]]; then
+      echo 'Uninstalling the package...'
+      rm -i "$local_install_dir/$installed_script_name"
+      if [[ -f "$local_install_dir/$installed_script_name" ]]; then
+        echo -e "\e[1;31mReinstallation has been canceled.\e[0m"
+        exit 1
+      else
+        echo 'Removed local installation. Package is reinstalling for all users...'
+      fi
+    else
+      echo -e "\e[1;31mReinstallation has been canceled.\e[0m"
+      exit 1
+    fi
+  else
+    exit 1
+  fi
+fi
+
 if [[ "$mode" == 'global' ]]; then
-  install_dir='/usr/local/bin'
+  install_dir="$global_install_dir"
   if [[ $EUID -ne 0 ]]; then
     sudo_cmd='sudo'
-    echo 'Global installation requires root privileges. You may be asked for your password.'
   else
     sudo_cmd=''
   fi
 else
-  install_dir="$HOME/.local/bin"
+  install_dir="$local_install_dir"
   sudo_cmd=''
 fi
 

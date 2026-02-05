@@ -1,7 +1,6 @@
 #!/bin/bash
 
 option_headers=(
-'Run.'
 'Install (current user).'
 'Install (all users).'
 'Uninstall.'
@@ -33,36 +32,34 @@ fi
 # Execute the selected action
 case $selected_option in
   1)
+    temp_file=$(mktemp)
+    script -q -c "../install_script.sh '../../projects/${selected_section}/${selected_project}' -l" "$temp_file"
+    message_color="\e[0m"
+    message=$(sed '1d; $d' "$temp_file")
+    rm "$temp_file"
     ;;
   2)
     temp_file=$(mktemp)
-    script -c "../install_script.sh '../../projects/${selected_section}/${selected_project}' -l" "$temp_file"
+    script -q -c "../install_script.sh '../../projects/${selected_section}/${selected_project}' -g" "$temp_file"
     message_color="\e[0m"
-    message=$(cat "$temp_file")
+    message=$(sed '1d; $d' "$temp_file")
     rm "$temp_file"
     ;;
   3)
     temp_file=$(mktemp)
-    script -c "../install_script.sh '../../projects/${selected_section}/${selected_project}' -g" "$temp_file"
+    script -q -c "../uninstall_script.sh '../../projects/${selected_section}/${selected_project}'" "$temp_file"
     message_color="\e[0m"
-    message=$(cat "$temp_file")
+    message=$(sed '1d; $d' "$temp_file")
     rm "$temp_file"
     ;;
   4)
-    temp_file=$(mktemp)
-    script -c "../uninstall_script.sh '../../projects/${selected_section}/${selected_project}'" "$temp_file"
-    message_color="\e[0m"
-    message=$(cat "$temp_file")
-    rm "$temp_file"
-    ;;
-  5)
     current_path=$(pwd)
     cd ../../projects/"$selected_section"/"$selected_project"
     message_color="\e[0m"
     message=$(./test.sh 2>&1)
     cd "$current_path"
     ;;
-  6)
+  5)
     location_name="projects"
     ;;
   *)
