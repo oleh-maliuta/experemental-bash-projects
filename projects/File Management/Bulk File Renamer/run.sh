@@ -29,7 +29,6 @@ usage() {
   echo "  --lower           Convert filenames to lowercase."
   echo "  --upper           Convert filenames to uppercase."
   echo "  --date            Prepend current date (YYYY-MM-DD_)."
-  echo "  -v, --verbose     Show detailed output."
   echo "  -n, --dry-run     Simulate file renaming."
   echo "  -h, --help        Show this help message."
   echo

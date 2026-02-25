@@ -54,9 +54,20 @@ case $selected_option in
     ;;
   4)
     current_path=$(pwd)
-    cd ../../projects/"$selected_section"/"$selected_project"
+    cd ../..
+    if [[ ! -d ./.venv/ ]]; then
+      python3 -m venv .venv
+      if [[ $? -ne 0 ]]; then
+        ./scripts/install_packages.sh python3-venv
+        python3 -m venv .venv
+      fi
+    fi
+    source .venv/bin/activate
+    pip3 install -r requirements.txt
+    cd projects/"$selected_section"/"$selected_project"
     message_color="\e[0m"
-    message=$(./test.sh 2>&1)
+    message=$(pytest -v test.py)
+    deactivate
     cd "$current_path"
     ;;
   5)
